@@ -32,19 +32,32 @@ localnet_up() {
   local version="$1"
   say "starting LocalNet $version (first start pulls about 2 GB of images and takes 3 to 5 minutes)"
   state_set localnet-version "$version"
-  localnet_compose "$version" up -d --wait --wait-timeout "${LABS_START_TIMEOUT:-900}" >/dev/null 2>&1 \
-    || ensure_splice_healthy \
-    || die "LocalNet $version did not become healthy; ./lab status and docker logs splice show why"
+  localnet_compose "$version" up -d >/dev/null 2>&1 || true
+  ensure_node_ready || die "LocalNet $version did not become ready; ./lab status and docker logs splice show why"
 }
 
-ensure_splice_healthy() {
-  local attempt
+node_ready() {
+  docker exec splice wget -q -O /dev/null http://localhost:2903/api/validator/readyz 2>/dev/null \
+    && docker exec splice wget -q -O /dev/null http://localhost:5012/api/scan/readyz 2>/dev/null \
+    && docker exec splice wget -q -O /dev/null http://localhost:5014/api/sv/readyz 2>/dev/null
+}
+
+wait_node_ready() {
+  local seconds="${1:-600}" waited=0
+  until node_ready; do
+    [ "$waited" -ge "$seconds" ] && return 1
+    sleep 10; waited=$((waited + 10))
+  done
+}
+
+ensure_node_ready() {
+  local attempt limit="${LABS_READY_TIMEOUT:-480}"
   for attempt in 1 2 3; do
-    wait_healthy splice 600 && return 0
-    say "splice is not healthy after 10 minutes (attempt $attempt of 3), restarting it: $(docker inspect splice --format '{{range .State.Health.Log}}{{.Output}}{{end}}' 2>/dev/null | tail -c 160 | tr '\n' ' ')"
+    wait_node_ready "$limit" && return 0
+    say "app-user's validator, Scan or the SV app is not ready after $((limit / 60)) minutes (attempt $attempt of 3), restarting splice"
     docker restart -t 60 splice >/dev/null
   done
-  wait_healthy splice 600
+  wait_node_ready "$limit"
 }
 
 localnet_down() {

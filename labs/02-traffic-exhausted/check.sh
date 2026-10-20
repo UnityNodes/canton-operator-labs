@@ -10,7 +10,7 @@ pass() { ok "$1"; }
 fail() { bad "$1"; failed=1; }
 
 say "checking the node"
-[ "$(container_health splice)" = healthy ] && pass "splice is healthy" || fail "splice is $(container_health splice)"
+node_ready && pass "app-user's validator, Scan and the SV app answer as ready" || fail "app-user's validator, Scan or the SV app is not ready"
 
 target="$(docker exec splice printenv TARGET_TRAFFIC_THROUGHPUT 2>/dev/null || true)"
 if [ -n "$target" ] && [ "$target" -gt 0 ] 2>/dev/null; then

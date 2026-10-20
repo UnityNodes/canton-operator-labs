@@ -11,7 +11,7 @@ cat > "$LABS_ROOT/node.env" <<ENV
 TARGET_TRAFFIC_THROUGHPUT=0
 ENV
 localnet_compose "$VERSION" up -d --no-deps splice >/dev/null
-ensure_splice_healthy || die "splice did not come back after the settings change"
+ensure_node_ready || die "the validator did not come back after the settings change"
 
 say "the app gets busy: app-user submits transactions until the node refuses them"
 sent=0

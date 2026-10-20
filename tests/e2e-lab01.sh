@@ -23,6 +23,6 @@ done
 docker start canton >/dev/null
 wait_healthy canton 600
 docker start splice >/dev/null
-ensure_splice_healthy
+ensure_node_ready
 ./lab 01 check
 echo "e2e: lab 01 passed"

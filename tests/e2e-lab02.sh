@@ -14,7 +14,7 @@ refusals="$(docker logs splice --since 30m 2>&1 | grep -c SEQUENCER_NOT_ENOUGH_T
 
 sed -i 's/^TARGET_TRAFFIC_THROUGHPUT=.*/TARGET_TRAFFIC_THROUGHPUT=20000/' node.env
 ./lab compose up -d --no-deps splice
-ensure_splice_healthy
+ensure_node_ready
 participant="$(state_get lab02-participant)"; at_break="$(state_get lab02-purchased)"
 for _ in $(seq 1 30); do
   now="$(traffic_purchased "$participant" || true)"

@@ -64,9 +64,11 @@ can paste anywhere to show you did it.
 After a start or restart, the `splice` container sometimes stays `starting` for
 good: the super validator's validator app misses its one-minute first database
 check while five applications boot in one JVM container, and never opens its
-port. Restarting the container (`docker restart splice`) brings it up. The lab
-scripts do this by themselves, up to three times; if you restart `splice` while
-fixing a lab and it hangs for more than ten minutes, restart it once more.
+port. Restarting the container (`docker restart splice`) brings it up. The labs do not
+depend on that one app: they wait for app-user's validator, Scan and the SV app,
+and restart `splice` up to three times if those are not ready. If you restart
+`splice` while fixing a lab and app-user's wallet does not answer within ten
+minutes, restart it once more.
 
 ## How it works
 

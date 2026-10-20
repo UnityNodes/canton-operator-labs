@@ -10,9 +10,10 @@ pass() { ok "$1"; }
 fail() { bad "$1"; failed=1; }
 
 say "checking the node"
-for c in postgres canton splice; do
+for c in postgres canton; do
   [ "$(container_health "$c")" = healthy ] && pass "$c is healthy" || fail "$c is $(container_health "$c")"
 done
+node_ready && pass "app-user's validator, Scan and the SV app answer as ready" || fail "app-user's validator, Scan or the SV app is not ready"
 
 before="$(restart_count splice)"; sleep "${LAB01_STABLE_SECONDS:-60}"; after="$(restart_count splice)"
 [ "$before" = "$after" ] && pass "splice did not restart in the last ${LAB01_STABLE_SECONDS:-60}s" || fail "splice restarted $((after - before)) time(s) while this check watched"

@@ -31,8 +31,8 @@ work out what is wrong, and bring the node back to the old version with its data
 
 ## What `check` verifies
 
-- `postgres`, `canton` and `splice` are healthy, and `splice` does not restart
-  for a minute.
+- `postgres` and `canton` are healthy, app-user's validator, Scan and the SV app
+  answer as ready, and `splice` does not restart for a minute.
 - The validator apps report the old version.
 - The participant's and the validator app's database schemas are the old
   version's schemas, read from Flyway's history table.

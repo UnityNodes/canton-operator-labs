@@ -31,7 +31,7 @@ You find the cause, get the node working, and make sure it does not happen again
 
 ## What `check` verifies
 
-- `splice` is healthy.
+- app-user's validator, Scan and the SV app answer as ready.
 - Automatic top-up is on in the running validator, so the same load does not
   stop the node again.
 - The validator bought traffic after the incident. Waiting until the free
