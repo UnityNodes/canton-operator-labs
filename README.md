@@ -59,6 +59,15 @@ can paste anywhere to show you did it.
 | `LAB01_FROM`, `LAB01_TO` | `0.8.4`, `0.9.2` | The versions lab 01 upgrades between |
 | `LAB02_VERSION` | `0.9.2` | The version lab 02 runs |
 
+## Known LocalNet behaviour
+
+After a start or restart, the `splice` container sometimes stays `starting` for
+good: the super validator's validator app misses its one-minute first database
+check while five applications boot in one JVM container, and never opens its
+port. Restarting the container (`docker restart splice`) brings it up. The lab
+scripts do this by themselves, up to three times; if you restart `splice` while
+fixing a lab and it hangs for more than ten minutes, restart it once more.
+
 ## How it works
 
 `lib/localnet.sh` fetches `cluster/compose/localnet` from the Splice repository

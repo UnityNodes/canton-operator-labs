@@ -25,7 +25,8 @@ You find the cause, get the node working, and make sure it does not happen again
 2. `./lab 02 break` applies a settings change, restarts the validator, and sends
    transactions until the node refuses them.
 3. Find out why and fix it. `./lab compose up -d --no-deps splice` applies a
-   change to `node.env`.
+   change to `node.env`. If `splice` then stays `starting` for more than ten
+   minutes, run `docker restart splice` once (see the main README).
 4. `./lab 02 check`.
 
 ## What `check` verifies

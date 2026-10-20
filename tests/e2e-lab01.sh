@@ -23,6 +23,6 @@ done
 docker start canton >/dev/null
 wait_healthy canton 600
 docker start splice >/dev/null
-wait_healthy splice 900 || { docker restart -t 60 splice >/dev/null; wait_healthy splice 900; }
+ensure_splice_healthy
 ./lab 01 check
 echo "e2e: lab 01 passed"

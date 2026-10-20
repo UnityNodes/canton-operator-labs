@@ -32,10 +32,19 @@ localnet_up() {
   local version="$1"
   say "starting LocalNet $version (first start pulls about 2 GB of images and takes 3 to 5 minutes)"
   state_set localnet-version "$version"
-  localnet_compose "$version" up -d --wait --wait-timeout "${LABS_START_TIMEOUT:-900}" >/dev/null || {
-    [ "${2:-}" = "tolerate-unhealthy" ] && return 0
-    die "LocalNet $version did not become healthy; ./lab status and docker logs splice show why"
-  }
+  localnet_compose "$version" up -d --wait --wait-timeout "${LABS_START_TIMEOUT:-900}" >/dev/null 2>&1 \
+    || ensure_splice_healthy \
+    || die "LocalNet $version did not become healthy; ./lab status and docker logs splice show why"
+}
+
+ensure_splice_healthy() {
+  local attempt
+  for attempt in 1 2 3; do
+    wait_healthy splice 600 && return 0
+    say "splice is not healthy after 10 minutes (attempt $attempt of 3), restarting it: $(docker inspect splice --format '{{range .State.Health.Log}}{{.Output}}{{end}}' 2>/dev/null | tail -c 160 | tr '\n' ' ')"
+    docker restart -t 60 splice >/dev/null
+  done
+  wait_healthy splice 600
 }
 
 localnet_down() {
