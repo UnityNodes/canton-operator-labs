@@ -1,0 +1,11 @@
+services:
+  postgres:
+    cpus: "0.5"
+  canton:
+    cpus: "1.2"
+  splice:
+    cpus: "2.0"
+  console:
+    cpus: "0.2"
+  nginx:
+    cpus: "0.1"
