@@ -32,8 +32,20 @@ localnet_up() {
   local version="$1"
   say "starting LocalNet $version (first start pulls about 2 GB of images and takes 3 to 5 minutes)"
   state_set localnet-version "$version"
-  localnet_compose "$version" up -d >/dev/null 2>&1 || true
+  localnet_start "$version"
   ensure_node_ready || die "LocalNet $version did not become ready; ./lab status and docker logs splice show why"
+  if [ "$(container_health splice)" = healthy ]; then
+    timeout 300 localnet_compose "$version" up -d nginx >/dev/null 2>&1 || true
+  fi
+}
+
+localnet_start() {
+  local version="$1" services
+  local -a list
+  services="$(localnet_compose "$version" config --services 2>/dev/null | grep -v -x nginx | tr '\n' ' ')"
+  [ -n "$services" ] || die "could not read the LocalNet $version services"
+  read -r -a list <<< "$services"
+  localnet_compose "$version" up -d "${list[@]}" >/dev/null 2>&1 || true
 }
 
 node_ready() {

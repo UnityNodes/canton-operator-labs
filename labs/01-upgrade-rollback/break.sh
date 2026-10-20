@@ -20,7 +20,7 @@ say "upgrade done: the validator apps report $(running_version)"
 
 say "the incident: $TO has to be backed out, and someone sets the version back to $FROM"
 localnet_compose "$TO" down >/dev/null
-localnet_compose "$FROM" up -d >/dev/null 2>&1 || true
+localnet_start "$FROM"
 state_set localnet-version "$FROM"
 
 cat <<MSG
