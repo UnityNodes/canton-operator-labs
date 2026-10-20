@@ -31,8 +31,11 @@ localnet_compose() {
 localnet_up() {
   local version="$1"
   say "starting LocalNet $version (first start pulls about 2 GB of images and takes 3 to 5 minutes)"
-  localnet_compose "$version" up -d --wait --wait-timeout "${LABS_START_TIMEOUT:-900}" >/dev/null
   state_set localnet-version "$version"
+  localnet_compose "$version" up -d --wait --wait-timeout "${LABS_START_TIMEOUT:-900}" >/dev/null || {
+    [ "${2:-}" = "tolerate-unhealthy" ] && return 0
+    die "LocalNet $version did not become healthy; ./lab status and docker logs splice show why"
+  }
 }
 
 localnet_down() {

@@ -15,8 +15,14 @@ fi
 
 say "upgrading to $TO: the $TO bundle's compose files and IMAGE_TAG, databases kept"
 localnet_compose "$FROM" down >/dev/null
-localnet_up "$TO"
-wait_healthy splice 600 || { docker restart -t 60 splice >/dev/null; wait_healthy splice 600 || die "the upgrade to $TO did not come up"; }
+localnet_up "$TO" tolerate-unhealthy
+up=0
+for attempt in 1 2 3; do
+  wait_healthy splice 600 && { up=1; break; }
+  say "splice is not healthy after 10 minutes (attempt $attempt): $(docker inspect splice --format '{{range .State.Health.Log}}{{.Output}}{{end}}' 2>/dev/null | tail -c 160 | tr '\n' ' ')"
+  docker restart -t 60 splice >/dev/null
+done
+[ "$up" = 1 ] || die "the upgrade to $TO did not come up; ./lab status and docker logs splice show why"
 say "upgrade done: the validator apps report $(running_version)"
 
 say "the incident: $TO has to be backed out, and someone sets the version back to $FROM"

@@ -21,11 +21,14 @@ jobs:
       - name: Free disk space for the LocalNet images
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
       - name: Run lab ${{ matrix.lab }} end to end
+        env:
+          LABS_CPU_LIMITS: "0"
         run: tests/e2e-lab${{ matrix.lab }}.sh
       - name: Container logs on failure
         if: failure()
         run: |
           docker ps -a
+          docker inspect splice --format '{{json .State.Health}}' || true
           for c in canton splice postgres; do echo "== $c"; docker logs --tail 200 "$c" 2>&1 | tail -200; done
       - name: Clean up
         if: always()
