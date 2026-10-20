@@ -15,7 +15,7 @@ DevNet, TestNet or MainNet.
 | Lab | What you practise | Docs it uses |
 | --- | --- | --- |
 | [01-upgrade-rollback](labs/01-upgrade-rollback) | Back up before an upgrade, upgrade, then roll back after the upgrade has migrated the databases | validator-backups, upgrade-canton-nodes, validator-disaster-recovery |
-| 02-traffic-exhausted (in progress) | A validator that runs out of synchronizer traffic, and how to top it up | synchronizer-traffic, local-traffic-management |
+| [02-traffic-exhausted](labs/02-traffic-exhausted) | A validator that runs out of synchronizer traffic, and how to top it up | synchronizer-traffic, validator-docker-compose, transaction-failures |
 
 More labs will follow. Open an issue if there is an incident you want to practise.
 
@@ -41,6 +41,10 @@ cd canton-operator-labs
 ./lab down         # stop LocalNet and delete its data
 ```
 
+A lab that changes node settings keeps them in `node.env`, the way a
+docker-compose validator keeps them in `.env`; `./lab compose up -d --no-deps splice`
+applies a change.
+
 Each lab's README tells the story, links the docs pages, and has hints you can
 open one at a time. When `check` passes it prints one `result=pass` line you
 can paste anywhere to show you did it.
@@ -53,6 +57,7 @@ can paste anywhere to show you did it.
 | `LABS_CPU_LIMITS` | `1` | `0` removes the CPU caps in `lib/compose/cpu-limits.yaml` (about 4 cores in total) |
 | `LOCALNET_DIR_OVERRIDE` | | Use a LocalNet directory you already have, for example from a Splice release bundle |
 | `LAB01_FROM`, `LAB01_TO` | `0.8.4`, `0.9.2` | The versions lab 01 upgrades between |
+| `LAB02_VERSION` | `0.9.2` | The version lab 02 runs |
 
 ## How it works
 

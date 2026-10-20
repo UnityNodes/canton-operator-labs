@@ -12,7 +12,7 @@ if [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=$LABS_PROJEC
   [ -n "$previous" ] || previous="$(running_version || true)"
   localnet_compose "${previous:-$FROM}" down -v >/dev/null
 fi
-rm -rf "$LABS_STATE"
+rm -rf "$LABS_STATE" "$LABS_ROOT/node.env"
 
 localnet_up "$FROM"
 say "giving app-user some Canton Coin, so there is data the rollback must keep"

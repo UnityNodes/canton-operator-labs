@@ -20,8 +20,10 @@ localnet_compose() {
   local extra=()
   [ "${LABS_NO_HOST_PORTS:-0}" = "1" ] && extra+=(-f "$LABS_ROOT/lib/compose/no-host-ports.yaml")
   [ "${LABS_CPU_LIMITS:-1}" = "1" ] && extra+=(-f "$LABS_ROOT/lib/compose/cpu-limits.yaml")
+  local envs=(--env-file compose.env --env-file env/common.env)
+  [ -f "$LABS_ROOT/node.env" ] && envs+=(--env-file "$LABS_ROOT/node.env")
   (cd "$dir" && IMAGE_TAG="$version" LOCALNET_DIR="$dir" docker compose -p "$LABS_PROJECT" \
-    --env-file compose.env --env-file env/common.env \
+    "${envs[@]}" \
     -f compose.yaml -f resource-constraints.yaml "${extra[@]}" \
     --profile sv --profile app-provider --profile app-user "$@") 2> >(grep -v 'level=warning' >&2)
 }
@@ -57,3 +59,22 @@ running_version() {
 }
 
 pg() { docker exec postgres psql -U cnadmin -d "$1" -Atc "$2"; }
+
+participant_id() {
+  local token
+  token=$(localnet_token ledger-api-user "$(node_audience "$1")")
+  docker exec splice wget -q -O - --header "Authorization: Bearer $token" \
+    "http://localhost:$(node_port "$1")903/api/validator/v0/admin/participant/identities" \
+    | sed -n 's/^{"id":"\([^"]*\)".*/\1/p'
+}
+
+synchronizer_id() {
+  docker exec splice wget -q -O - --post-data '{}' --header 'Content-Type: application/json' \
+    http://localhost:5012/api/scan/v0/amulet-rules \
+    | grep -o '"activeSynchronizer":"[^"]*"' | head -1 | cut -d'"' -f4
+}
+
+traffic_purchased() {
+  docker exec splice wget -q -O - "http://localhost:5012/api/scan/v0/domains/$(synchronizer_id)/members/$1/traffic-status" \
+    | grep -o '"total_purchased":[0-9]*' | cut -d: -f2
+}

@@ -2,6 +2,7 @@
 set -euo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/lib/common.sh"
 . "$LABS_ROOT/lib/localnet.sh"
+. "$LABS_ROOT/lib/localnet-api.sh"
 
 usage() {
   cat <<'USAGE'
@@ -12,6 +13,7 @@ Canton operator labs
   ./lab <lab> break          cause the incident
   ./lab <lab> check          verify your fix
   ./lab status               what is running
+  ./lab compose <args>       docker compose on the running LocalNet, with node.env applied
   ./lab down                 stop LocalNet and delete its data
 
 <lab> is the number (01) or the directory name (01-upgrade-rollback).
@@ -34,9 +36,13 @@ case "${1:-help}" in
   status)
     docker ps -a --filter "label=com.docker.compose.project=$LABS_PROJECT" --format '  {{.Names}}\t{{.Status}}\t{{.Image}}' | sed 's#ghcr.io/digital-asset/decentralized-canton-sync/docker/##'
     v="$(running_version || true)"; [ -n "$v" ] && say "validator apps report version $v" || true ;;
+  compose)
+    need docker git
+    v="$(state_get localnet-version)"; [ -n "$v" ] || die "no LocalNet is recorded; run a lab's setup first"
+    shift; localnet_compose "$v" "$@" ;;
   down)
     need docker git
-    localnet_down "${2:-}" -v && rm -rf "$LABS_STATE" && say "LocalNet stopped and its volumes deleted" ;;
+    localnet_down "${2:-}" -v && rm -rf "$LABS_STATE" "$LABS_ROOT/node.env" && say "LocalNet stopped and its volumes deleted" ;;
   *)
     [ $# -ge 2 ] || { usage; exit 1; }
     dir="$(lab_dir "$1")"; step="$2"; shift 2

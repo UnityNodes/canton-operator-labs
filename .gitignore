@@ -1,3 +1,4 @@
 .state/
 .localnet/
 backups/
+node.env

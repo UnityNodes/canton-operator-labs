@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lab: ["01"]
+        lab: ["01", "02"]
     steps:
       - uses: actions/checkout@v4
       - name: Free disk space for the LocalNet images
