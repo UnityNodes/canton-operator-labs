@@ -38,7 +38,9 @@ localnet_up() {
 localnet_down() {
   local version; version="$(state_get localnet-version)"
   [ -n "$version" ] || version="${1:-}"
-  [ -n "$version" ] || die "no LocalNet started by these labs is recorded in $LABS_STATE"
+  [ -n "$version" ] || version="$(running_version || true)"
+  [ -n "$version" ] || version="$(docker inspect splice --format '{{.Config.Image}}' 2>/dev/null | sed -n 's/.*://p')"
+  [ -n "$version" ] || die "no LocalNet from these labs is running and none is recorded in $LABS_STATE"
   localnet_compose "$version" down "${@:2}" >/dev/null
 }
 
