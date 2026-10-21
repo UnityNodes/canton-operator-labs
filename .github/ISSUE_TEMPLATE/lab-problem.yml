@@ -1,0 +1,45 @@
+name: A lab did not work
+description: A lab failed to start, hung, or a step was unclear
+body:
+  - type: dropdown
+    id: lab
+    attributes:
+      label: Lab
+      options:
+        - 01 Upgrade and rollback
+        - 02 Traffic exhausted
+        - Not a specific lab
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Where did it go wrong
+      options:
+        - setup
+        - break
+        - while fixing it
+        - check
+        - down
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran and what you saw. Paste the last lines of output.
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Your machine
+      description: OS, Docker version, memory given to Docker
+      placeholder: Ubuntu 24.04, Docker 27.3, 16 GB
+    validations:
+      required: true
+  - type: textarea
+    id: containers
+    attributes:
+      label: Output of docker ps -a
+      render: text

@@ -1,0 +1,20 @@
+name: Request a lab
+description: An incident you want to practise
+body:
+  - type: textarea
+    id: incident
+    attributes:
+      label: The incident
+      description: What breaks, and what an operator sees when it does
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Public docs that already explain the fix
+      description: Links to the pages an operator would use
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it is worth practising
+      description: How often it happens, what it costs when it does

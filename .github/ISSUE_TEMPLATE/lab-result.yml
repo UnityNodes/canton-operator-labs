@@ -1,0 +1,44 @@
+name: I finished a lab
+description: Tell us how a lab went
+body:
+  - type: dropdown
+    id: lab
+    attributes:
+      label: Lab
+      options:
+        - 01 Upgrade and rollback
+        - 02 Traffic exhausted
+    validations:
+      required: true
+  - type: input
+    id: result
+    attributes:
+      label: Result line printed by check
+      placeholder: lab=02-traffic-exhausted result=pass version=0.9.2 ...
+    validations:
+      required: true
+  - type: input
+    id: minutes
+    attributes:
+      label: Minutes it took, including waiting for nodes
+    validations:
+      required: true
+  - type: dropdown
+    id: used_docs
+    attributes:
+      label: Did the linked docs pages get you to the fix
+      options:
+        - Yes, without hints
+        - Yes, after opening hints
+        - Partly
+        - No
+    validations:
+      required: true
+  - type: textarea
+    id: unclear
+    attributes:
+      label: What was unclear, missing or wrong, in the lab or in the docs
+  - type: input
+    id: who
+    attributes:
+      label: Organisation or role (optional)

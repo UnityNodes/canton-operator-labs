@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Canton documentation
+    url: https://docs.canton.network
+    about: Questions about Canton itself are best asked in the Canton community channels or the docs repository.
