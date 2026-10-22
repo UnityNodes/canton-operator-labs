@@ -25,7 +25,10 @@ Each lab lives in `labs/NN-name/` with four scripts and a README.
 Rules for a lab:
 
 - LocalNet only. A lab never needs DevNet, TestNet, MainNet, or a secret of the learner's.
-- `check` must prove the fix, not a recovery by waiting. If the incident clears by itself after a while, `check` has to tell the two apart.
+- `check` must prove the fix, not a recovery by waiting. If the incident clears by itself after a while, `check` has to tell the two apart. It should repeat the condition that caused the incident, not trust one probe.
+- `break` records that it ran, and `check` refuses to pass without it.
+- `break` verifies that the incident really happened, for example by finding the error in a log, before it tells the learner to start.
+- A new Splice version is added with its commit in `pinned_commit` in `lib/localnet.sh`.
 - The README links the public docs the learner should use, and every link must resolve.
 - A lab has an end-to-end test in `tests/` that runs `setup`, `break`, a scripted fix and `check`, and is added to `.github/workflows/labs.yml`.
 - Plain English, short sentences.

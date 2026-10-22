@@ -19,7 +19,7 @@
 
 Practise real Canton validator incidents on your own machine. Each lab breaks a local Canton Network the way nodes break in production. You find the cause and fix it with the public operator docs. A check tells you when the node is really fixed.
 
-Everything runs on LocalNet, the Docker Compose network that ships with [Splice](https://github.com/hyperledger-labs/splice). Nothing touches DevNet, TestNet or MainNet, and you do not need a validator of your own.
+Everything runs on LocalNet, the Docker Compose network that ships with [Splice](https://github.com/canton-network/splice). Nothing touches DevNet, TestNet or MainNet, and you do not need a validator of your own.
 
 > [!TIP]
 > Many operators meet a failed upgrade or an empty traffic balance for the first time in production. The docs describe the fix, but reading a fix is not the same as having done it. These labs give you the incident first, then the docs, then proof that you fixed it.
@@ -59,15 +59,21 @@ cd canton-operator-labs
 ./lab down         # stop LocalNet and delete its data
 ```
 
-Each lab's README tells the story, links the docs pages, and has hints you can open one at a time.
+Each lab's README tells the story, links the docs pages, and has hints you can open one at a time. If `splice` shows `starting` for more than ten minutes, run `docker restart splice`. That is a known LocalNet quirk, described [below](#known-localnet-behaviour).
 
 **You need**
 
-- Docker with Compose v2, 16 GB of memory free for Docker, about 12 GB of disk
-- bash, git, openssl, awk
+- Docker with Compose 2.24 or newer, 16 GB of memory for Docker (12 GB is the minimum), about 12 GB of disk
+- bash, git, openssl, awk, sed
 - Linux or macOS. Windows works through WSL 2.
 
-The first start pulls about 2 GB of images per Splice version from `ghcr.io/digital-asset/decentralized-canton-sync`.
+The first start pulls about 2 GB of images per Splice version from `ghcr.io/digital-asset/decentralized-canton-sync`. The times in the lab table do not include that pull.
+
+## Where to run it
+
+Use a laptop or a spare VM. The labs start LocalNet with fixed container names (`canton`, `splice`, `postgres`, `nginx`) and refuse to start if a container with one of those names already exists, for example on a machine that also runs a validator. They also refuse to run against a remote Docker (a `DOCKER_HOST` or Docker context that points at `tcp://` or `ssh://`).
+
+LocalNet's database and node ports are not published on your network. Only the browser UIs listen, and only on `127.0.0.1`. `./lab down` removes only the containers and volumes of the Compose project `canton-labs`.
 
 ## Prove it
 
@@ -82,7 +88,9 @@ lab=02-traffic-exhausted result=pass version=0.9.2 purchased=<number> at=<UTC ti
   <a href="https://github.com/UnityNodes/canton-operator-labs/issues/new?template=lab-problem.yml"><img alt="A lab did not work" src="https://img.shields.io/badge/A_LAB_DID_NOT_WORK-21262D?style=for-the-badge&logo=github&logoColor=white"></a>
 </p>
 
-If you ran a lab, a minute of feedback tells us which steps were unclear.
+If you ran a lab, a minute of feedback tells us which steps were unclear. The result line is plain text, so what helps most is an honest report: your organisation if you are happy to share it, and what was unclear.
+
+The scripts are open source. Reading `labs/*/break.sh` or `tests/` spoils the lab, not the check: `check` still needs a node that really works. If you work with an AI assistant, [AGENTS.md](AGENTS.md) tells it to coach you instead of handing over the answer.
 
 ## Known LocalNet behaviour
 
@@ -95,9 +103,13 @@ A lab that changes node settings keeps them in `node.env`, the way a docker-comp
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `LABS_NO_HOST_PORTS` | `0` | `1` publishes no LocalNet port on the host, for machines where ports 2000 to 5432 are taken |
+| `LABS_NO_HOST_PORTS` | `0` | `1` also stops the browser UIs from listening on `127.0.0.1`, for machines where ports 2000 to 4000 are taken |
 | `LABS_CPU_LIMITS` | `1` | `0` removes the CPU caps in `lib/compose/cpu-limits.yaml` (about 4 cores in total) |
-| `LOCALNET_DIR_OVERRIDE` | | Use a LocalNet directory you already have, for example from a Splice release bundle |
+| `LABS_READY_TIMEOUT` | `480` | Seconds to wait for the node to become ready, three times, before giving up. Raise it on a slow machine |
+| `LAB_YES` | `0` | `1` answers yes when a lab asks before it removes an earlier LocalNet or breaks without backups |
+| `LABS_SKIP_PREFLIGHT` | `0` | `1` skips the checks of Docker, memory and container names that run before `setup` |
+| `LABS_ALLOW_REMOTE_DOCKER` | `0` | `1` allows a remote Docker daemon. The labs then delete volumes there |
+| `LOCALNET_DIR_OVERRIDE`, `SPLICE_REPO` | | Use a LocalNet directory or a Splice repository of your own. The labs then run compose files from there with your Docker rights, so use only sources you trust |
 | `LAB01_FROM`, `LAB01_TO` | `0.8.4`, `0.9.2` | The versions lab 01 upgrades between |
 | `LAB02_VERSION` | `0.9.2` | The version lab 02 runs |
 
@@ -108,7 +120,7 @@ A lab that changes node settings keeps them in `node.env`, the way a docker-comp
 
 `lib/localnet.sh` fetches `cluster/compose/localnet` from the Splice repository at the version a lab needs, and runs it with the release's own compose files, environment files and memory limits. The labs add only two optional override files in `lib/compose/`. Scripts talk to the nodes through `docker exec`, so they work whether or not ports are published.
 
-Every lab is tested end to end in CI on a stock GitHub runner: `setup`, `break`, a scripted fix, and `check`. The workflow also runs every Monday, so a Splice release that changes behaviour shows up as a red build.
+LocalNet configuration is fetched from the Splice repository at a pinned commit for each tested version, and the labs refuse a tag that resolves to anything else. Every lab is tested end to end in CI on a stock GitHub runner: `setup`, `break`, a scripted fix, and `check`. The workflow also runs every Monday, so a Splice release that changes behaviour shows up as a red build.
 
 </details>
 
