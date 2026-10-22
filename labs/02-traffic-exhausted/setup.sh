@@ -4,13 +4,9 @@
 . "$LABS_ROOT/lib/localnet-api.sh"
 
 VERSION="${LAB02_VERSION:-0.9.2}"
+valid_version "$VERSION" || die "LAB02_VERSION must be a Splice version like 0.9.2"
 
-if [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=$LABS_PROJECT")" ]; then
-  say "removing the LocalNet left by a previous lab, with its data"
-  previous="$(state_get localnet-version)"
-  [ -n "$previous" ] || previous="$(running_version || true)"
-  localnet_compose "${previous:-$VERSION}" down -v >/dev/null
-fi
+reset_previous_localnet "$VERSION"
 rm -rf "$LABS_STATE"
 cat > "$LABS_ROOT/node.env" <<ENV
 TARGET_TRAFFIC_THROUGHPUT=20000
@@ -28,8 +24,10 @@ for _ in $(seq 1 36); do
   done
 done
 [ "${balance%%.*}" -gt 0 ] || die "app-user received no Canton Coin within 6 minutes; check ./lab status"
+participant="$(participant_id app-user || true)"
+[ -n "$participant" ] || die "could not read app-user's participant id; ./lab status and docker logs splice show why"
 state_set lab02-version "$VERSION"
-state_set lab02-participant "$(participant_id app-user)"
+state_set lab02-participant "$participant"
 
 cat <<MSG
 

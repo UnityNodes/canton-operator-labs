@@ -5,14 +5,15 @@ cd "$(dirname "$0")/.."
 . lib/localnet.sh
 . lib/localnet-api.sh
 
-./lab 02 setup
+LAB_YES=1 ./lab 02 setup
 ./lab 02 break
-if ./lab 02 check; then echo "e2e: check passed on the broken node, which it must not"; exit 1; fi
+if out="$(./lab 02 check 2>&1)"; then echo "e2e: check passed on the broken node, which it must not"; exit 1; fi
+printf '%s\n' "$out" | grep -q FAIL || { echo "e2e: check failed without reporting a FAIL line"; printf '%s\n' "$out"; exit 1; }
 
 refusals="$(docker logs splice --since 30m 2>&1 | grep -c SEQUENCER_NOT_ENOUGH_TRAFFIC_CREDIT || true)"
 [ "$refusals" -gt 0 ] || { echo "e2e: the refusal reason is not in the validator log"; exit 1; }
 
-sed -i 's/^TARGET_TRAFFIC_THROUGHPUT=.*/TARGET_TRAFFIC_THROUGHPUT=20000/' node.env
+printf 'TARGET_TRAFFIC_THROUGHPUT=20000\n' > node.env
 ./lab compose up -d --no-deps splice
 ensure_node_ready
 participant="$(state_get lab02-participant)"; at_break="$(state_get lab02-purchased)"

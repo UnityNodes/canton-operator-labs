@@ -8,7 +8,7 @@ even reports healthy. The node is still broken.
 In this lab you take the backups an upgrade needs, live through that rollback,
 work out what is wrong, and bring the node back to the old version with its data.
 
-**Time:** 30 to 45 minutes, most of it waiting for nodes to start.
+**Time:** 30 to 45 minutes, most of it waiting for nodes to start, plus the first image pull.
 **Versions:** Splice 0.8.4 to 0.9.2 by default (`LAB01_FROM`, `LAB01_TO`).
 
 ## The docs you work from
@@ -23,6 +23,7 @@ work out what is wrong, and bring the node back to the old version with its data
 1. `./lab 01 setup` starts LocalNet on the old version and gives `app-user` some
    Canton Coin. That balance is the data your rollback has to keep.
 2. Take your backups into `backups/`, as the backup page tells an operator to.
+   If `backups/` already holds files from an earlier run, `setup` moves them aside.
    LocalNet keeps every node's database in one Postgres container called
    `postgres`, user `cnadmin`. `setup` prints the command that lists them.
 3. `./lab 01 break` upgrades the node properly, then rolls it back the wrong way.

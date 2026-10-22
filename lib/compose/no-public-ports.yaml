@@ -1,0 +1,9 @@
+services:
+  postgres:
+    ports: !reset []
+  canton:
+    ports: !reset []
+  splice:
+    ports: !reset []
+  swagger-ui:
+    ports: !reset []

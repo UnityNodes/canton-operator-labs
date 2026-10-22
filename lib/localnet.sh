@@ -1,15 +1,31 @@
 #!/usr/bin/env bash
 
+pinned_commit() {
+  case "$1" in
+    0.8.4) printf '%s' fa6b029f2563423f3f612302cfdc84986366479d ;;
+    0.9.2) printf '%s' 60882e4de07a1f146a7d615e44c52a17fe40419f ;;
+    0.9.3) printf '%s' de3724016885ba7c88cb8bf8b94c47682386b5f5 ;;
+  esac
+}
+
 localnet_dir() {
-  local version="$1"
+  local version="$1" src want got
+  valid_version "$version" || die "'$version' is not a Splice version like 0.9.2"
   if [ -n "${LOCALNET_DIR_OVERRIDE:-}" ]; then printf '%s' "$LOCALNET_DIR_OVERRIDE"; return; fi
-  local src="$LABS_CACHE/splice-$version"
-  if [ ! -f "$src/cluster/compose/localnet/compose.yaml" ]; then
+  src="$LABS_CACHE/splice-$version"
+  want="$(pinned_commit "$version")"
+  got="$(git -C "$src" rev-parse HEAD 2>/dev/null || true)"
+  if [ ! -f "$src/cluster/compose/localnet/compose.yaml" ] || { [ -n "$want" ] && [ "$got" != "$want" ]; }; then
     say "fetching the LocalNet configuration of Splice $version"
     rm -rf "$src"
-    git clone -q --depth 1 --branch "$version" --filter=blob:none --sparse "$SPLICE_REPO" "$src" 2>/dev/null \
-      || die "could not fetch Splice $version from $SPLICE_REPO"
+    git clone -q --depth 1 --branch "$version" --filter=blob:none --sparse "$SPLICE_REPO" "$src" >&2       || die "could not fetch Splice $version from $SPLICE_REPO (the git message is above)"
     git -C "$src" sparse-checkout set cluster/compose/localnet >/dev/null
+    got="$(git -C "$src" rev-parse HEAD)"
+    if [ -n "$want" ] && [ "$got" != "$want" ]; then
+      rm -rf "$src"
+      die "Splice $version resolved to $got but these labs were tested with $want; refusing to run it"
+    fi
+    [ -n "$want" ] || say "Splice $version is not one of the versions these labs were tested with (commit $got)"
   fi
   printf '%s' "$src/cluster/compose/localnet"
 }
@@ -17,15 +33,12 @@ localnet_dir() {
 localnet_compose() {
   local version="$1"; shift
   local dir; dir="$(localnet_dir "$version")"
-  local extra=()
+  local extra=(-f "$LABS_ROOT/lib/compose/no-public-ports.yaml")
   [ "${LABS_NO_HOST_PORTS:-0}" = "1" ] && extra+=(-f "$LABS_ROOT/lib/compose/no-host-ports.yaml")
   [ "${LABS_CPU_LIMITS:-1}" = "1" ] && extra+=(-f "$LABS_ROOT/lib/compose/cpu-limits.yaml")
   local envs=(--env-file compose.env --env-file env/common.env)
   [ -f "$LABS_ROOT/node.env" ] && envs+=(--env-file "$LABS_ROOT/node.env")
-  (cd "$dir" && IMAGE_TAG="$version" LOCALNET_DIR="$dir" docker compose -p "$LABS_PROJECT" \
-    "${envs[@]}" \
-    -f compose.yaml -f resource-constraints.yaml "${extra[@]}" \
-    --profile sv --profile app-provider --profile app-user "$@") 2> >(grep -v 'level=warning' >&2)
+  (cd "$dir" && IMAGE_TAG="$version" LOCALNET_DIR="$dir" docker compose -p "$LABS_PROJECT"     "${envs[@]}"     -f compose.yaml -f resource-constraints.yaml "${extra[@]}"     --profile sv --profile app-provider --profile app-user "$@") 2> >(grep -v 'level=warning' >&2)
 }
 
 localnet_up() {
@@ -35,17 +48,42 @@ localnet_up() {
   localnet_start "$version"
   ensure_node_ready || die "LocalNet $version did not become ready; ./lab status and docker logs splice show why"
   if [ "$(container_health splice)" = healthy ]; then
-    timeout 300 localnet_compose "$version" up -d nginx >/dev/null 2>&1 || true
+    localnet_compose "$version" up -d --no-deps nginx >/dev/null 2>&1 \
+      || say "nginx did not start, so the browser UIs on localhost are unavailable; the labs do not need them"
   fi
 }
 
 localnet_start() {
-  local version="$1" services
+  local version="$1" all services log rc=0
   local -a list
-  services="$(localnet_compose "$version" config --services 2>/dev/null | grep -v -x nginx | tr '\n' ' ')"
-  [ -n "$services" ] || die "could not read the LocalNet $version services"
+  all="$(localnet_compose "$version" config --services)" || die "could not read the services of LocalNet $version"
+  services="$(printf '%s\n' "$all" | grep -v -x nginx | tr '\n' ' ' || true)"
+  [ -n "${services// /}" ] || die "LocalNet $version lists no services"
   read -r -a list <<< "$services"
-  localnet_compose "$version" up -d "${list[@]}" >/dev/null 2>&1 || true
+  mkdir -p "$LABS_STATE"
+  log="$LABS_STATE/compose-up.log"
+  localnet_compose "$version" up -d "${list[@]}" >"$log" 2>&1 || rc=$?
+  if [ "$rc" != 0 ]; then
+    if [ -z "$(docker ps -aq --filter "label=com.docker.compose.project=$LABS_PROJECT")" ]; then
+      tail -n 25 "$log" >&2
+      die "docker compose could not start LocalNet (exit $rc); the last lines of its output are above"
+    fi
+    say "docker compose reported a problem (exit $rc) and the node may still come up; its output is in $log"
+  fi
+}
+
+reset_previous_localnet() {
+  local fallback="$1" previous answer
+  [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=$LABS_PROJECT")" ] || return 0
+  if [ "${LAB_YES:-0}" != "1" ]; then
+    [ -t 0 ] || die "a LocalNet from a previous lab exists; run again with LAB_YES=1 to remove it and its data"
+    read -r -p 'A LocalNet from a previous lab exists. Remove it and all its data? [y/N] ' answer
+    [ "$answer" = "y" ] || die "left the existing LocalNet alone"
+  fi
+  say "removing the LocalNet left by a previous lab, with its data"
+  previous="$(state_get localnet-version)"
+  [ -n "$previous" ] || previous="$(running_version || true)"
+  localnet_compose "${previous:-$fallback}" down -v >/dev/null
 }
 
 node_ready() {
@@ -76,13 +114,13 @@ localnet_down() {
   local version; version="$(state_get localnet-version)"
   [ -n "$version" ] || version="${1:-}"
   [ -n "$version" ] || version="$(running_version || true)"
-  [ -n "$version" ] || version="$(docker inspect splice --format '{{.Config.Image}}' 2>/dev/null | sed -n 's/.*://p')"
-  [ -n "$version" ] || die "no LocalNet from these labs is running and none is recorded in $LABS_STATE"
+  [ -n "$version" ] || version="$(docker container inspect splice --format '{{.Config.Image}}' 2>/dev/null | sed -n 's/.*://p' || true)"
+  if [ -z "$version" ]; then say "no LocalNet from these labs is running"; return 0; fi
   localnet_compose "$version" down "${@:2}" >/dev/null
 }
 
-container_health() { docker inspect "$1" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' 2>/dev/null || echo missing; }
-restart_count() { docker inspect "$1" --format '{{.RestartCount}}' 2>/dev/null || echo 0; }
+container_health() { docker container inspect "$1" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' 2>/dev/null || echo missing; }
+restart_count() { docker container inspect "$1" --format '{{.RestartCount}}' 2>/dev/null || echo 0; }
 
 wait_healthy() {
   local name="$1" seconds="${2:-600}" waited=0

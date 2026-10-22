@@ -5,14 +5,18 @@
 
 FROM="${LAB01_FROM:-0.8.4}"
 TO="${LAB01_TO:-0.9.2}"
+valid_version "$FROM" && valid_version "$TO" || die "LAB01_FROM and LAB01_TO must be Splice versions like 0.9.2"
 
-if [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=$LABS_PROJECT")" ]; then
-  say "removing the LocalNet left by a previous lab, with its data"
-  previous="$(state_get localnet-version)"
-  [ -n "$previous" ] || previous="$(running_version || true)"
-  localnet_compose "${previous:-$FROM}" down -v >/dev/null
-fi
+reset_previous_localnet "$FROM"
 rm -rf "$LABS_STATE" "$LABS_ROOT/node.env"
+
+mkdir -p "$LABS_ROOT/backups"
+if [ -n "$(ls -A "$LABS_ROOT/backups" 2>/dev/null)" ]; then
+  aside="$LABS_ROOT/backups-previous-$(date +%s)"
+  mv "$LABS_ROOT/backups" "$aside"
+  mkdir -p "$LABS_ROOT/backups"
+  say "moved the backups of an earlier run to $aside, so they are not mistaken for this run's"
+fi
 
 localnet_up "$FROM"
 say "giving app-user some Canton Coin, so there is data the rollback must keep"

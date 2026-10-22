@@ -14,6 +14,7 @@ localnet_compose "$VERSION" up -d --no-deps splice >/dev/null
 ensure_node_ready || die "the validator did not come back after the settings change"
 
 say "the app gets busy: app-user submits transactions until the node refuses them"
+started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 sent=0
 refused=0
 for _ in $(seq 1 800); do
@@ -25,6 +26,10 @@ for _ in $(seq 1 800); do
   fi
 done
 [ "$refused" -ge 3 ] || die "the node accepted 800 transactions without running out of traffic; is top-up really off?"
+[ "$sent" -gt 0 ] || die "app-user could not send a single transaction before the refusals began; run ./lab 02 setup again"
+reason="$(docker logs splice --since "$started" 2>&1 | grep -c SEQUENCER_NOT_ENOUGH_TRAFFIC_CREDIT || true)"
+[ "$reason" -gt 0 ] || die "transactions were refused, but not for lack of traffic (no SEQUENCER_NOT_ENOUGH_TRAFFIC_CREDIT in the validator log); run ./lab 02 setup again"
+state_set lab02-sent "$sent"
 state_set lab02-purchased "$(traffic_purchased "$(state_get lab02-participant)")"
 
 cat <<MSG

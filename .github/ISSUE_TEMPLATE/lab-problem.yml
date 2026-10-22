@@ -42,4 +42,5 @@ body:
     id: containers
     attributes:
       label: Output of docker ps -a
+      description: Remove the lines of containers that are not part of the labs before you paste it.
       render: text

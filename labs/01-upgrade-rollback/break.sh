@@ -22,6 +22,7 @@ say "the incident: $TO has to be backed out, and someone sets the version back t
 localnet_compose "$TO" down >/dev/null
 localnet_start "$FROM"
 state_set localnet-version "$FROM"
+state_set lab01-broken 1
 
 cat <<MSG
 

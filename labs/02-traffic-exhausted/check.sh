@@ -27,10 +27,23 @@ else
   fail "no traffic bought since the incident (${now:-?} bytes purchased, ${at_break:-?} at the incident); base-rate traffic coming back on its own is not a fix"
 fi
 
-if wallet_call app-user POST wallet/tap '{"amount":"1"}' >/dev/null 2>&1; then
-  pass "app-user can submit a transaction"
+load="$(state_get lab02-sent)"
+case "$load" in ''|*[!0-9]*) load=100 ;; esac
+[ "$load" -lt 20 ] && load=20
+[ "$load" -gt 200 ] && load=200
+refused=0
+for _ in $(seq 1 "$load"); do
+  if wallet_call app-user POST wallet/tap '{"amount":"1"}' >/dev/null 2>&1; then
+    refused=0
+  else
+    refused=$((refused + 1))
+    [ "$refused" -ge 3 ] && break
+  fi
+done
+if [ "$refused" -lt 3 ]; then
+  pass "app-user sent $load transactions in a row, about the load that stopped it before, and none was held back"
 else
-  fail "app-user's transaction was refused"
+  fail "the node refused app-user's transactions again under the same load"
 fi
 
 echo

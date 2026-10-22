@@ -1,11 +1,3 @@
 services:
-  postgres:
-    ports: !reset []
   nginx:
-    ports: !reset []
-  canton:
-    ports: !reset []
-  splice:
-    ports: !reset []
-  swagger-ui:
     ports: !reset []

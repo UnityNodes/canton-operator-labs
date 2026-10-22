@@ -2,3 +2,4 @@
 .localnet/
 backups/
 node.env
+backups-previous-*/

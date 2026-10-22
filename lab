@@ -42,11 +42,14 @@ case "${1:-help}" in
     shift; localnet_compose "$v" "$@" ;;
   down)
     need docker git
-    localnet_down "${2:-}" -v && rm -rf "$LABS_STATE" "$LABS_ROOT/node.env" && say "LocalNet stopped and its volumes deleted" ;;
+    localnet_down "${2:-}" -v
+    rm -rf "$LABS_STATE" "$LABS_ROOT/node.env"
+    say "LocalNet stopped and its volumes deleted" ;;
   *)
     [ $# -ge 2 ] || { usage; exit 1; }
     dir="$(lab_dir "$1")"; step="$2"; shift 2
     [ -x "$dir/$step.sh" ] || die "$(basename "$dir") has no step '$step' (setup, break, check)"
-    need docker git openssl
+    need docker git openssl awk sed
+    [ "$step" = setup ] && preflight
     LAB_DIR="$dir" "$dir/$step.sh" "$@" ;;
 esac

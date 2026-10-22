@@ -5,6 +5,7 @@
 
 FROM="$(state_get lab01-from)"
 [ -n "$FROM" ] || die "run ./lab 01 setup first"
+[ "$(state_get lab01-broken)" = 1 ] || die "run ./lab 01 break first; there is nothing to fix yet"
 failed=0
 pass() { ok "$1"; }
 fail() { bad "$1"; failed=1; }
@@ -18,7 +19,7 @@ node_ready && pass "app-user's validator, Scan and the SV app answer as ready" |
 before="$(restart_count splice)"; sleep "${LAB01_STABLE_SECONDS:-60}"; after="$(restart_count splice)"
 [ "$before" = "$after" ] && pass "splice did not restart in the last ${LAB01_STABLE_SECONDS:-60}s" || fail "splice restarted $((after - before)) time(s) while this check watched"
 
-version="$(running_version)"
+version="$(running_version || true)"
 [ "$version" = "$FROM" ] && pass "validator apps run $FROM" || fail "validator apps report '${version:-nothing}', expected $FROM"
 
 want_p="$(state_get lab01-participant-rank)"; got_p="$(pg participant-app-user 'SELECT max(installed_rank) FROM participant.flyway_schema_history' 2>/dev/null || true)"

@@ -8,6 +8,13 @@ on:
     - cron: "0 5 * * 1"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: labs-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lab:
     runs-on: ubuntu-latest
@@ -17,7 +24,7 @@ jobs:
       matrix:
         lab: ["01", "02"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Free disk space for the LocalNet images
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
       - name: Run lab ${{ matrix.lab }} end to end
