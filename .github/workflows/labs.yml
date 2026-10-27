@@ -16,6 +16,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check the balance comparison
+        run: tests/balance-kept.sh
   lab:
     runs-on: ubuntu-latest
     timeout-minutes: 120

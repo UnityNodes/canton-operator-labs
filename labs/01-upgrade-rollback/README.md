@@ -38,7 +38,9 @@ work out what is wrong, and bring the node back to the old version with its data
 - The participant's and the validator app's database schemas are the old
   version's schemas, read from Flyway's history table.
 - No schema errors in the participant log for three minutes.
-- `app-user` holds the balance it had before the upgrade.
+- `app-user` holds at least the balance it had before the upgrade. The wallet
+  collects validator rewards 25 to 30 minutes after LocalNet starts, so a higher
+  balance is fine; a lower one means the restore lost data.
 - If your backups are in `backups/`, it notes whether the validator app backup
   was taken before the participant backup.
 
@@ -81,7 +83,11 @@ With nodes running, the validator app's backup must be taken strictly before the
 participant's. Taken the other way round, the app's database can describe
 transactions the restored participant has never seen. On LocalNet you also run
 the synchronizer, so you back up and restore its databases too; a real validator
-only has its own two.
+only has its own two. The same rule applies to them: apps first, then the
+participants and mediators in either order, the sequencer last. A participant
+that is ahead of the sequencer after a restore cannot reconnect
+(`ForkHappened`). The order is documented on
+[Backup and restore of Canton nodes](https://docs.canton.network/global-synchronizer/production-operations/node-backup-restore).
 </details>
 
 ## Clean up

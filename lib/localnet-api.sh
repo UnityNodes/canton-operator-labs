@@ -40,6 +40,11 @@ wallet_balance() {
   wallet_call "$1" GET wallet/balance | sed -n 's/.*"effective_unlocked_qty":"\([^"]*\)".*/\1/p'
 }
 
+balance_kept() {
+  [ -n "$1" ] && [ -n "$2" ] || return 1
+  awk -v got="$1" -v want="$2" 'BEGIN { exit !(got - want > -1) }'
+}
+
 wallet_call() {
   local node="$1" method="$2" path="$3" body="${4:-}"
   local token prefix

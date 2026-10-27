@@ -31,10 +31,10 @@ errors="$(docker logs canton --since 3m 2>&1 | grep -c 'does not exist' || true)
 [ "$errors" = "0" ] && pass "no schema errors in the participant log for 3 minutes" || fail "$errors schema error(s) in the participant log in the last 3 minutes"
 
 want_b="$(state_get lab01-balance)"; got_b="$(wallet_balance app-user 2>/dev/null || true)"
-if [ -n "$got_b" ] && awk -v a="$got_b" -v b="$want_b" 'BEGIN { d = a - b; if (d < 0) d = -d; exit !(d < 1) }'; then
-  pass "app-user holds $got_b CC, as before the upgrade"
+if balance_kept "$got_b" "$want_b"; then
+  pass "app-user holds $got_b CC, at least the $want_b it held before the upgrade"
 else
-  fail "app-user holds '${got_b:-nothing}' CC, before the upgrade it held $want_b"
+  fail "app-user holds '${got_b:-nothing}' CC, before the upgrade it held $want_b; rewards can only add to a balance, so less means the restore lost data"
 fi
 
 v_dump="$(ls -t "$LABS_ROOT"/backups/*validator-app-user* 2>/dev/null | tail -1 || true)"
